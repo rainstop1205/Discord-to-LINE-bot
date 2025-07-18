@@ -30,8 +30,14 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 async def on_ready():
     print(f"🤖 Bot 上線：{bot.user}", flush=True)
     try:
-        synced = await bot.tree.sync()
-        print(f"✅ Slash commands 已同步：{[cmd.name for cmd in synced]}", flush=True)
+        # 清除舊的全域指令
+        await bot.tree.sync()
+        print(f"✅ Slash commands 已同步：{[cmd.name for cmd in await bot.tree.fetch_commands()]}", flush=True)
+
+        # 可列出目前註冊的所有指令 (debug)
+        for cmd in await bot.tree.fetch_commands():
+            print(f"📎 已註冊指令：/{cmd.name} - {cmd.description}", flush=True)
+
     except Exception as e:
         print(f"⚠️ 指令同步失敗：{e}", flush=True)
 
