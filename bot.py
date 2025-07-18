@@ -1,14 +1,27 @@
 import os
+import threading
+from flask import Flask
 import discord
 from discord import app_commands
 import requests
 from discord.ext import commands
 
-# 環境變數
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_TARGET_GROUP_ID = os.environ.get("LINE_TARGET_GROUP_ID")  # LINE 群組 ID
+LINE_TARGET_GROUP_ID = os.environ.get("LINE_TARGET_GROUP_ID")
 
+# Flask App，回應 Cloud Run 的 HealthCheck
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return "OK", 200
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+
+# Discord Bot 設定
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="/", intents=intents)
 
@@ -21,7 +34,7 @@ async def on_ready():
     except Exception as e:
         print(f"⚠️ 指令同步失敗：{e}", flush=True)
 
-@tree.command(name="send-to-line", description="傳送訊息到 LINE 群組")
+@bot.tree.command(name="send-to-line", description="傳送訊息到 LINE 群組")
 @app_commands.describe(message="你要傳送的訊息")
 async def send_to_line(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=False)
@@ -46,7 +59,6 @@ def push_to_line_group(text):
         "messages": [{"type": "text", "text": text}]
     }
     response = requests.post(url, headers=headers, json=payload)
-
     if response.status_code == 200:
         print(f"✅ 已發送到 LINE 群組：{text}", flush=True)
         return True
@@ -55,4 +67,7 @@ def push_to_line_group(text):
         return False
 
 if __name__ == "__main__":
+    # 啟動 Flask HTTP Server (獨立 Thread)
+    threading.Thread(target=run_flask).start()
+    # 啟動 Discord Bot 主程式
     bot.run(DISCORD_BOT_TOKEN)
