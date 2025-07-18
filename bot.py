@@ -1,5 +1,6 @@
 import os
 import threading
+import asyncio
 from flask import Flask
 import discord
 from discord import app_commands
@@ -34,19 +35,28 @@ async def on_ready():
     except Exception as e:
         print(f"⚠️ 指令同步失敗：{e}", flush=True)
 
-@bot.tree.command(name="send-to-line", description="傳送訊息到 LINE 群組")
+@bot.tree.command(name="stl", description="傳送訊息到 LINE 群組") #stl = send to line
 @app_commands.describe(message="你要傳送的訊息")
 async def send_to_line(interaction: discord.Interaction, message: str):
     await interaction.response.defer(thinking=False)
     
     sender = interaction.user.display_name
-    text = f"💬 {sender}：{message}"
-    success = push_to_line_group(text)
+    text = f"{sender}：{message}"
     
-    if success:
-        await interaction.followup.send("✅ 已成功發送訊息到 LINE 群組！")
-    else:
-        await interaction.followup.send("⚠️ 發送失敗，請稍後再試～")
+    try:
+        success = await async_push_to_line_group(text)
+        
+        if success:
+            await interaction.followup.send("✅ 已成功發送訊息到 LINE 群組！")
+        else:
+            await interaction.followup.send("⚠️ 發送失敗，請稍後再試～")
+    except Exception as e:
+        print(f"❌ 發送過程出錯：{e}", flush=True)
+        await interaction.followup.send("🚨 發送過程中發生錯誤，請稍後再試！")
+
+async def async_push_to_line_group(text):
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, push_to_line_group, text)
 
 def push_to_line_group(text):
     url = "https://api.line.me/v2/bot/message/push"
