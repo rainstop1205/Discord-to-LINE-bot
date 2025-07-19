@@ -44,7 +44,7 @@ async def on_ready():
 @bot.tree.command(name="stl", description="傳送訊息到 LINE 群組") #stl = send to line
 @app_commands.describe(message="你要傳送的訊息")
 async def send_to_line(interaction: discord.Interaction, message: str):
-    await interaction.response.defer(thinking=False)
+    await interaction.response.defer(thinking=True)
     
     sender = interaction.user.display_name
     text = f"{sender}：{message}"
