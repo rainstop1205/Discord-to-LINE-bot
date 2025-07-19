@@ -42,7 +42,7 @@ async def send_to_line(interaction: discord.Interaction, message: str):
         success = await asyncio.wait_for(async_push_to_line_group(text), timeout=10)
         
         if success:
-            await interaction.followup.send("✅ 已成功發送訊息到 LINE 群組！")
+            await interaction.followup.send(f"✅ 成功發送訊息！\n👤 {text}")
         else:
             await interaction.followup.send("⚠️ 發送失敗，請稍後再試～")
     except asyncio.TimeoutError:
