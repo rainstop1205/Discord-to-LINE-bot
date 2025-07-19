@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
+ALLOWED_PARENT_CHANNEL_ID = int(os.environ.get("DISCORD_ALLOWED_PARENT_CHANNEL_ID"))
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_TARGET_GROUP_ID = os.environ.get("LINE_TARGET_GROUP_ID")
 
@@ -33,6 +34,14 @@ async def on_ready():
 @bot.tree.command(name="stl", description="傳送訊息到 LINE 群組")
 @app_commands.describe(message="你要傳送的訊息")
 async def send_to_line(interaction: discord.Interaction, message: str):
+    # getattr(obj, "attr", default)：如果 obj 有 attr 屬性就回傳它，沒有的話回傳 default
+    parent_id = getattr(interaction.channel, "parent_id", interaction.channel.id)
+
+    if parent_id != ALLOWED_PARENT_CHANNEL_ID:
+        await interaction.response.send_message(
+            "🚫 嘿嘿～別亂丟訊息到其他專案的 LINE 群組啦 📵", ephemeral=True)
+        return
+    
     await interaction.response.defer(thinking=True)
     
     sender = interaction.user.display_name
