@@ -5,8 +5,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+from logger import logger
 
-# 載入 .env 檔案（你在 GCE 上應該要用 dotenv）
+# 載入 .env 檔案
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
@@ -20,18 +21,18 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"🤖 Bot 上線：{bot.user}", flush=True)
+    logger.info(f"🤖 Bot 上線：{bot.user}")
     try:
         await bot.tree.sync()
-        print(f"✅ Slash commands 已同步：{[cmd.name for cmd in await bot.tree.fetch_commands()]}", flush=True)
+        logger.info(f"✅ Slash commands 已同步：{[cmd.name for cmd in await bot.tree.fetch_commands()]}")
 
         for cmd in await bot.tree.fetch_commands():
-            print(f"📎 已註冊指令：/{cmd.name} - {cmd.description}", flush=True)
+            logger.info(f"📎 已註冊指令：/{cmd.name} - {cmd.description}")
 
     except Exception as e:
-        print(f"⚠️ 指令同步失敗：{e}", flush=True)
+        logger.exception(f"⚠️ 指令同步失敗：{e}")
 
-@bot.tree.command(name="stl", description="傳送訊息到 LINE 群組")
+@bot.tree.command(name="stl", description="傳送訊息到 LINE 群組") #send_to_line
 @app_commands.describe(message="你要傳送的訊息")
 async def send_to_line(interaction: discord.Interaction, message: str):
     # getattr(obj, "attr", default)：如果 obj 有 attr 屬性就回傳它，沒有的話回傳 default
@@ -57,7 +58,7 @@ async def send_to_line(interaction: discord.Interaction, message: str):
     except asyncio.TimeoutError:
         await interaction.followup.send("🚨 發送超時，請稍後再試！")
     except Exception as e:
-        print(f"❌ 發送過程出錯：{e}", flush=True)
+        logger.exception(f"❌ 發送過程出錯：{e}")
         await interaction.followup.send("🚨 發送過程中發生錯誤，請稍後再試！")
 
 async def async_push_to_line_group(text):
@@ -71,15 +72,19 @@ async def async_push_to_line_group(text):
         "messages": [{"type": "text", "text": text}]
     }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=payload) as resp:
-            if resp.status == 200:
-                print(f"✅ 已發送到 LINE 群組：{text}", flush=True)
-                return True
-            else:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=payload) as resp:
                 text_resp = await resp.text()
-                print(f"⚠️ LINE 發送失敗：{resp.status} - {text_resp}", flush=True)
-                return False
-
+                if 200 <= resp.status < 300:
+                    logger.info("✅ 成功發送訊息至 LINE 群組。")
+                    return True
+                else:
+                    logger.error(f"⚠️ LINE 發送失敗：{resp.status} - {text_resp}")
+                    return False
+    except Exception as e:
+        logger.exception(f"💥 發送 LINE 訊息時發生例外：{e}")
+        return False
+    
 if __name__ == "__main__":
     asyncio.run(bot.start(DISCORD_BOT_TOKEN))

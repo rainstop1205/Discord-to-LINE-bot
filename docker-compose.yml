@@ -1,0 +1,19 @@
+services:
+  discord-to-line-bot:
+    build: .
+    container_name: discord-to-line-bot
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # redis:
+  #   image: redis:alpine
+  #   container_name: discord-redis
+  #   restart: unless-stopped
