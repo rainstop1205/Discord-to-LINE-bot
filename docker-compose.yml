@@ -1,6 +1,7 @@
 services:
   discord-to-line-bot:
     build: .
+    image: discord-to-line-bot:latest # name:tag
     container_name: discord-to-line-bot
     env_file:
       - .env

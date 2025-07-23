@@ -4,11 +4,7 @@ import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
-from dotenv import load_dotenv
 from logger import logger
-
-# 載入 .env 檔案
-load_dotenv()
 
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
 ALLOWED_PARENT_CHANNEL_ID = int(os.environ.get("DISCORD_ALLOWED_PARENT_CHANNEL_ID"))
